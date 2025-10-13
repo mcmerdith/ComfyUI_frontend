@@ -3,6 +3,7 @@ import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import type {
   CanvasPointer,
+  ExecutableLGraphNode,
   LGraphCanvas,
   LGraphNode,
   Size
@@ -36,6 +37,8 @@ export interface WidgetEventOptions {
 export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   implements IBaseWidget
 {
+  // TODO: mcmerdith, the augmentation no longer covers this?
+  [symbol: symbol]: boolean
   /** From node edge to widget edge */
   static margin = 15
   /** From widget edge to tip of arrow button */
@@ -345,4 +348,25 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     cloned.value = this.value
     return cloned
   }
+
+  // TODO: mcmerdith, this needs default implementations? idk...
+
+  onRemove?(): void
+  beforeQueued?(): unknown
+  afterQueued?(): unknown
+  serializeValue?(
+    node: ExecutableLGraphNode, // TODO: mcmerdith, also linked to the serializeValue signature in IBaseWidget
+    index: number
+  ): Promise<unknown> | unknown
+
+  /**
+   * Refreshes the widget's value or options from its remote source.
+   */
+  refresh?(): unknown
+
+  /**
+   * If the widget supports dynamic prompts, this will be set to true.
+   * See extensions/core/dynamicPrompts.ts
+   */
+  dynamicPrompts?: boolean
 }

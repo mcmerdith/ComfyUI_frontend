@@ -1,5 +1,12 @@
+import type { DOMWidget } from '@/scripts/domWidget'
+
 import type { CanvasColour, Point, RequiredProps, Size } from '../interfaces'
-import type { CanvasPointer, LGraphCanvas, LGraphNode } from '../litegraph'
+import type {
+  CanvasPointer,
+  ExecutableLGraphNode,
+  LGraphCanvas,
+  LGraphNode
+} from '../litegraph'
 import type { CanvasPointerEvent } from './events'
 
 export interface IWidgetOptions<TValues = unknown[]> {
@@ -30,6 +37,33 @@ export interface IWidgetOptions<TValues = unknown[]> {
 
   values?: TValues
   callback?: IWidget['callback']
+
+  // TODO: mcmerdith, verify
+  /** Currently used by DOM widgets only.  Declaring here reduces complexity. */
+  onHide?: (widget: DOMWidget<any, any>) => void
+  /**
+   * Controls whether the widget's value is included in the API workflow/prompt.
+   * - If false, the value will be excluded from the API workflow but still serialized as part of the graph state
+   * - If true or undefined, the value will be included in both the API workflow and graph state
+   * @default true
+   * @use {@link IBaseWidget.serialize} if you don't want the widget value to be included in both
+   * the API workflow and graph state.
+   */
+  serialize?: boolean
+  /**
+   * Rounding value for numeric float widgets.
+   */
+  round?: number
+  /**
+   * The minimum size of the node if the widget is present.
+   */
+  minNodeSize?: Size
+
+  /** If the widget is advanced, this will be set to true. */
+  advanced?: boolean
+
+  /** If the widget is hidden, this will be set to true. */
+  hidden?: boolean
 }
 
 interface IWidgetSliderOptions extends IWidgetOptions<number[]> {
@@ -260,6 +294,7 @@ export interface IBaseWidget<
   TOptions extends IWidgetOptions<unknown> = IWidgetOptions<unknown>
 > {
   [symbol: symbol]: boolean
+  // TODO: mcmerdith, why is this here?
 
   linkedWidgets?: IBaseWidget[]
 
@@ -404,4 +439,24 @@ export interface IBaseWidget<
     node: LGraphNode,
     canvas: LGraphCanvas
   ): boolean
+
+  // TODO: mcmerdith, verify
+  onRemove?(): void
+  beforeQueued?(): unknown
+  afterQueued?(): unknown
+  serializeValue?(
+    node: ExecutableLGraphNode, // TODO: mcmerdith, originally LGraphNode, but that breaks executionUtil
+    index: number
+  ): Promise<unknown> | unknown
+
+  /**
+   * Refreshes the widget's value or options from its remote source.
+   */
+  refresh?(): unknown
+
+  /**
+   * If the widget supports dynamic prompts, this will be set to true.
+   * See extensions/core/dynamicPrompts.ts
+   */
+  dynamicPrompts?: boolean
 }

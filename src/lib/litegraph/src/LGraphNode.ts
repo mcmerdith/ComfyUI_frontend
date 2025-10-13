@@ -7,6 +7,9 @@ import {
 import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import type { ExecutedWsMessage } from '@/schemas/apiSchema'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { DOMWidget, DOMWidgetOptions } from '@/scripts/domWidget'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
 
@@ -45,7 +48,13 @@ import type {
   Size
 } from './interfaces'
 import { LiteGraph } from './litegraph'
-import type { LGraphNodeConstructor, Subgraph, SubgraphNode } from './litegraph'
+import type {
+  ExecutableLGraphNode,
+  ExecutionId,
+  LGraphNodeConstructor,
+  Subgraph,
+  SubgraphNode
+} from './litegraph'
 import {
   createBounds,
   isInRect,
@@ -209,6 +218,107 @@ supported callbacks:
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export interface LGraphNode {
   constructor: LGraphNodeConstructor
+
+  // TODO: mcmerdith, verify
+  widgets_values?: unknown[]
+
+  /**
+   * Callback fired on each node after the graph is configured
+   */
+  onAfterGraphConfigured?(): void
+  onGraphConfigured?(): void
+  onExecuted?(output: any): void
+  onNodeCreated?(this: LGraphNode): void
+  /** @deprecated groupNode */
+  setInnerNodes?(nodes: LGraphNode[]): void
+  /** Originally a group node API. */
+  getInnerNodes?(
+    nodesByExecutionId: Map<ExecutionId, ExecutableLGraphNode>,
+    subgraphNodePath?: readonly NodeId[],
+    nodes?: ExecutableLGraphNode[],
+    subgraphs?: Set<LGraphNode>
+  ): ExecutableLGraphNode[]
+  /** @deprecated groupNode */
+  convertToNodes?(): LGraphNode[]
+  recreate?(): Promise<LGraphNode>
+  refreshComboInNode?(
+    defs: Record<string, ComfyNodeDef> // TODO: is it V1 or V2 (seems to be V1)
+  ): void
+  /** @deprecated groupNode */
+  updateLink?(link: LLink): LLink | null
+  /**
+   * @deprecated primitive node.
+   * Used by virtual nodes (primitives) to insert their values into the graph prior to queueing.
+   * Externally used by
+   * - https://github.com/pythongosssss/ComfyUI-Custom-Scripts/blob/bbda5e52ad580c13ceaa53136d9c2bed9137bd2e/web/js/presetText.js#L160-L182
+   * - https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite/blob/4c7858ddd5126f7293dc3c9f6e0fc4c263cde079/web/js/VHS.core.js#L1889-L1889
+   */
+  applyToGraph?(extraLinks?: LLink[]): void
+  onExecutionStart?(): unknown
+  /**
+   * Callback invoked when the node is dragged over from an external source, i.e.
+   * a file or another HTML element.
+   * @param e The drag event
+   * @returns {boolean} True if the drag event should be handled by this node, false otherwise
+   */
+  onDragOver?(e: DragEvent): boolean
+  /**
+   * Callback invoked when the node is dropped from an external source, i.e.
+   * a file or another HTML element.
+   * @param e The drag event
+   * @returns {boolean} True if the drag event should be handled by this node, false otherwise
+   */
+  onDragDrop?(e: DragEvent): Promise<boolean> | boolean
+
+  index?: number
+  runningInternalNodeId?: NodeId
+
+  comfyClass?: string
+
+  /**
+   * If the node is a frontend only node and should not be serialized into the prompt.
+   */
+  isVirtualNode?: boolean
+
+  addDOMWidget<
+    T extends HTMLElement = HTMLElement,
+    V extends object | string = string
+  >(
+    name: string,
+    type: string,
+    element: T,
+    options?: DOMWidgetOptions<V>
+  ): DOMWidget<T, V>
+
+  animatedImages?: boolean
+  imgs?: HTMLImageElement[]
+  images?: ExecutedWsMessage['output']['images'] // TODO: mcmerdith, do we need "images" here?
+  /** Container for the node's video preview */
+  videoContainer?: HTMLElement
+  /** Whether the node's preview media is loading */
+  isLoading?: boolean
+  /** The content type of the node's preview media */
+  previewMediaType?: 'image' | 'video' | 'audio' | 'model'
+
+  preview: string[]
+  /** Index of the currently selected image on a multi-image node such as Preview Image */
+  imageIndex?: number | null
+  imageRects: Rect[]
+  overIndex?: number | null
+  pointerDown?: { index: number | null; pos: Point } | null
+  /**
+   * @deprecated No longer needed as we use {@link useImagePreviewWidget}
+   */
+  setSizeForImage?(force?: boolean): void
+  /** @deprecated Unused */
+  inputHeight?: unknown
+
+  /** The y offset of the image preview to the top of the node body. */
+  imageOffset?: number
+  /** Callback for pasting an image file into the node */
+  pasteFile?(file: File): void
+  /** Callback for pasting multiple files into the node */
+  pasteFiles?(files: File[]): void
 }
 
 // #endregion Types

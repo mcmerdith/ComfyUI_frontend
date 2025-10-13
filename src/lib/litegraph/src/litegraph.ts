@@ -1,3 +1,6 @@
+import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+
 import type { ContextMenu } from './ContextMenu'
 import type { LGraphNode } from './LGraphNode'
 import { LiteGraphGlobal } from './LiteGraphGlobal'
@@ -73,6 +76,12 @@ export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
   keepAllLinksOnBypass: boolean
   resizeHandleSize?: number
   resizeEdgeSize?: number
+
+  // TODO: mcmerdith, verify
+  comfyClass: string
+  nodeData?: ComfyNodeDefV1 & ComfyNodeDefV2 & { [key: symbol]: unknown }
+  category?: string
+  new (): T
 }
 
 // End backwards compat

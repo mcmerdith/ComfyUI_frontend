@@ -332,6 +332,8 @@ export interface INodeFlags {
  */
 export interface IWidgetLocator {
   name: string
+  // TODO: mcmerdith, verify
+  [key: symbol]: unknown
 }
 
 export interface INodeInputSlot extends INodeSlot {
@@ -352,6 +354,8 @@ export interface INodeOutputSlot extends INodeSlot {
   links: LinkId[] | null
   _data?: unknown
   slot_index?: number
+  // TODO: mcmerdith, verify
+  widget?: { name: string; [key: symbol]: unknown }
 }
 
 /** Links */
