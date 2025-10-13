@@ -15,7 +15,8 @@ export class LegacyWidget<TWidget extends IBaseWidget = IBaseWidget>
   extends BaseWidget<TWidget>
   implements IBaseWidget
 {
-  override draw?(
+  // TODO: mcmerdith, doesn't need override anymore?
+  draw?(
     ctx: CanvasRenderingContext2D,
     node: LGraphNode,
     widget_width: number,
