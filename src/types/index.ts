@@ -41,6 +41,7 @@ export type {
   createNodeExecutionId
 } from './nodeIdentification'
 export type { DOMWidget, DOMWidgetOptions } from '@/scripts/domWidget'
+export * from './litegraph'
 export type {
   EmbeddingsResponse,
   ExtensionsResponse,
