@@ -13,14 +13,18 @@ useExtensionService().registerExtension({
       const widgets = node.widgets.filter((w) => w.dynamicPrompts)
       for (const widget of widgets) {
         // Override the serialization of the value to resolve dynamic prompts for all widgets supporting it in this node
-        widget.serializeValue = (workflowNode, widgetIndex) => {
+        // TODO: mcmerdith, are the params required?
+        widget.serializeValue = (_workflowNode, _widgetIndex) => {
           if (typeof widget.value !== 'string') return widget.value
 
           const prompt = processDynamicPrompt(widget.value)
 
+          console.log('serializing', _workflowNode, 'to', prompt)
+
           // Overwrite the value in the serialized workflow pnginfo
-          if (workflowNode?.widgets_values)
-            workflowNode.widgets_values[widgetIndex] = prompt
+          // TODO: mcmerdith, does widgets_values ever have a value?
+          // if (workflowNode?.widgets_values)
+          //  workflowNode.widgets_values[widgetIndex] = prompt
 
           return prompt
         }
