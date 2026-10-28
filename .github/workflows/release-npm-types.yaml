@@ -111,6 +111,23 @@ jobs:
           fi
           echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
 
+      - name: Resolve publish dist-tag
+        id: publish_tag
+        shell: bash
+        env:
+          REQUESTED_TAG: ${{ inputs.dist_tag }}
+          VERSION: ${{ steps.verify.outputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ "$REQUESTED_TAG" != latest ]]; then
+            TAG="$REQUESTED_TAG"
+          elif [[ "$VERSION" == *-* ]]; then
+            TAG=next
+          else
+            TAG="core-$(cut -d. -f1-2 <<<"$VERSION")"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
       - name: Check if version already on npm
         id: check_npm
         shell: bash
@@ -134,7 +151,16 @@ jobs:
 
       - name: Publish package
         if: steps.check_npm.outputs.exists == 'false'
-        run: pnpm publish --access public --tag "${{ inputs.dist_tag }}" --no-git-checks
+        run: pnpm publish --access public --tag "$PUBLISH_TAG" --no-git-checks
         working-directory: dist
         env:
+          PUBLISH_TAG: ${{ steps.publish_tag.outputs.tag }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  enforce_latest:
+    needs: publish_types_manual
+    uses: ./.github/workflows/release-npm-types-enforce-latest.yaml
+    with:
+      version: ${{ inputs.version }}
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -1,0 +1,45 @@
+name: Enforce Greatest-Semver-Wins npm Latest Tag
+
+on:
+  workflow_dispatch: {}
+  workflow_call:
+    inputs:
+      version:
+        required: false
+        type: string
+        default: ''
+    secrets:
+      NPM_TOKEN:
+        required: true
+  schedule:
+    - cron: '30 4 * * *'
+
+concurrency:
+  group: enforce-npm-types-latest-tag
+  cancel-in-progress: false
+
+jobs:
+  enforce-latest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          sparse-checkout: |
+            .nvmrc
+            scripts/cicd/reconcile-npm-latest-tag.sh
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          registry-url: https://registry.npmjs.org
+
+      - name: Reconcile latest to the highest stable version
+        env:
+          PACKAGE: '@comfyorg/comfyui-frontend-types'
+          VERSION: ${{ inputs.version }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: ./scripts/cicd/reconcile-npm-latest-tag.sh
