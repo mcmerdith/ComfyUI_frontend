@@ -15,8 +15,6 @@ import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 function deferred<T>() {
   let resolve: (value: T | PromiseLike<T>) => void = () => {}
   const promise = new Promise<T>((done) => {
@@ -29,20 +27,19 @@ async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
 }
 
-// Mock the API
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    getServerFeature: vi.fn(() => false),
-    internalURL: vi.fn((path) => `mock-internal-url${path}`),
-    fileURL: vi.fn((path) => `mock-file-url${path}`),
-    apiURL: vi.fn((path) => `mock-api-url${path}`),
-    fetchApi: vi.fn(async () =>
-      Response.json({ name: 'kitten_cop.mp4', type: 'input' })
-    )
-  }
-}))
+vi.mock(import('@/scripts/api'))
+
+beforeEach(() => {
+  vi.mocked(api.getServerFeature).mockReturnValue(false)
+  vi.mocked(api.internalURL).mockImplementation(
+    (path) => `mock-internal-url${path}`
+  )
+  vi.mocked(api.fileURL).mockImplementation((path) => `mock-file-url${path}`)
+  vi.mocked(api.apiURL).mockImplementation((path) => `mock-api-url${path}`)
+  vi.mocked(api.fetchApi).mockImplementation(async () =>
+    Response.json({ name: 'kitten_cop.mp4', type: 'input' })
+  )
+})
 
 // loadGraphData resolves to the workflow it activated; the education card
 // binds to that, so the mock returns a per-test workflow object.
@@ -850,7 +847,7 @@ describe('useTemplateWorkflows', () => {
     vi.mocked(api.fetchApi).mockResolvedValue(
       Response.json({ name: 'kitten_cop (1).mp4', type: 'input' })
     )
-    const refreshed = deferred<void>()
+    const refreshed = deferred<boolean>()
     vi.mocked(app.reloadNodeDefs).mockImplementation(() => refreshed.promise)
     const { loader } = mountTemplateWorkflows()
     const result = loader.loadWorkflowTemplate('video', 'default')
@@ -860,7 +857,7 @@ describe('useTemplateWorkflows', () => {
     download.resolve(new Response('video'))
     await vi.waitFor(() => expect(app.reloadNodeDefs).toHaveBeenCalled())
     expect(app.loadGraphData).not.toHaveBeenCalled()
-    refreshed.resolve()
+    refreshed.resolve(true)
     expect(await result).toBe('loaded')
     expect(app.loadGraphData).toHaveBeenCalledWith(
       expect.objectContaining({
